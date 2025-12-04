@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     if (resend) {
       await resend.emails.send({
         from: 'leads@burchcontracting.com',
-        to: ['YOUR_EMAIL_HERE'],          // ← PUT YOUR REAL EMAIL HERE
+        to: ['scott@burchcontracting'],          // ← PUT YOUR REAL EMAIL HERE
         subject: 'New Lead – Burch Contracting',
         html: `<h2>New Lead</h2><p>Name: ${body.name}<br>Phone: ${body.phone}<br>Email: ${body.email}<br>Message: ${body.description}</p>`,
       });
