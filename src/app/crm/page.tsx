@@ -9,11 +9,17 @@ const supabase = createClient(
 
 export default function CRM() {
   const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     supabase.from('leads').select('*').order('created_at', { ascending: false })
-      .then(({ data }) => setLeads(data || []));
+      .then(({ data }) => {
+        setLeads(data || []);
+        setLoading(false);
+      });
   }, []);
+
+  if (loading) return <div className="p-8 text-center">Loading CRM...</div>;
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
