@@ -9,10 +9,11 @@ export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { label: 'Home', href: '/' },
-    { label: 'CRM', href: '/crm' },
-    { label: 'Contact', href: '/contact' }
-  ];
+  { label: 'Home', href: '/' },
+  { label: 'Customer Portal', href: '/portal' },   // ← updated name
+  { label: 'Admin', href: '/crm' },             // ← your private CRM
+  { label: 'Contact', href: '/contact' }
+];
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">

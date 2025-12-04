@@ -4,13 +4,13 @@ export const businessConfig = {
   description: "Professional residential and light commercial contracting services.",
 
   contact: {
-    phone: "(555) 123-4567",
+    phone: "(864)724-4600",
     email: "info@burchcontracting.com",
-    address: "123 Main Street",
-    city: "YourTown",
-    state: "ST",
-    zip: "12345",
-    hours: "Monday - Friday: 7:00 AM - 6:00 PM\nSaturday: 8:00 AM - 4:00 PM"
+    address: "",
+    city: "Simpsonville",
+    state: "SC",
+    zip: "29681",
+    hours: "Monday - Friday: 8:00 AM - 5:00 PM\nSaturday: Appt Only"
   },
 
   social: {
@@ -21,8 +21,8 @@ export const businessConfig = {
   },
 
   serviceArea: {
-    description: "Proudly serving YourTown and surrounding communities",
-    locations: ["YourTown", "Nearby City", "Adjacent Township"]
+    description: "Proudly serving Simpsonville and surrounding communities",
+    locations: ["Simpsonville", "Mauldin", "Ft Inn","Gray Court","Woodruff","Five Forks","Laurens"]
   },
 
   services: [
