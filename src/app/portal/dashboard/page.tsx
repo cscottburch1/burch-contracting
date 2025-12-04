@@ -51,72 +51,74 @@ export default function PortalDashboard() {
         .limit(1)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+      if (error && error.code !== 'PGRST116') throw error;
       setLead(data);
-    } catch (err: any) {
+    } catch {
       setError('No project found yet — we’ll update you soon!');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'new': return 'bg-yellow-100 text-yellow-800';
-      case 'contacted': return 'bg-blue-100 text-blue-800';
-      case 'quoted': return 'bg-purple-100 text-purple-800';
-      case 'won': case 'in progress': return 'bg-green-100 text-green-800';
-      case 'lost': case 'closed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const getStatusBadge = (status: string) => {
+    const map: Record<string, string> = {
+      new: 'bg-yellow-100 text-yellow-800',
+      contacted: 'bg-blue-100 text-blue-800',
+      quoted: 'bg-purple-100 text-purple-800',
+      'in progress': 'bg-green-100 text-green-800',
+      won: 'bg-green-100 text-green-800',
+      closed: 'bg-gray-100 text-gray-800',
+      lost: 'bg-gray-100 text-gray-800',
+    };
+    const key = status?.toLowerCase() || 'new';
+    return map[key] || map.new;
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl">Loading your project...</div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="text-xl text-gray-600">Loading your project...</div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-blue-900 text-white py-12">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h1 className="text-4xl font-bold">Welcome to Your Project Portal</h1>
-          <p className="mt-2 text-blue-100">Hi {user?.user_metadata?.full_name || user?.email}</p>
-        </div>
+      {/* Header */}
+      <div className="bg-blue-900 text-white py-10 px-6 text-center">
+        <h1 className="text-3xl md:text-4xl font-bold">Your Project Portal</h1>
+        <p className="mt-2 text-blue-100 text-lg">
+          Hi {user?.user_metadata?.full_name || user?.email}
+        </p>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        {error && !lead ? (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">
-            <p className="text-lg text-yellow-800">{error}</p>
-            <p className="mt-4 text-gray-600">
-              We’ll send you an email as soon as your project is ready!
-            </p>
+      <div className="max-w-4xl mx-auto p-6 space-y-8">
+        {/* No Project */}
+        {error && !lead && (
+          <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-8 text-center">
+            <p className="text-lg text-yellow-800 font-medium">{error}</p>
+            <p className="mt-3 text-gray-600">We’ll email you as soon as your project is ready!</p>
           </div>
-        ) : lead ? (
-          <div class endoclass="space-y-8">
-            {/* Status */}
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold mb-4">Project Status</h2>
-              <div className={`inline-block px-6 py-3 rounded-full text-lg font-semibold ${getStatusColor(lead.status)}`}>
+        )}
+
+        {/* Main Dashboard */}
+        {lead && (
+          <>
+            {/* Status Card */}
+            <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Current Status</h2>
+              <div className={`inline-block px-8 py-4 rounded-full text-lg font-bold ${getStatusBadge(lead.status)}`}>
                 {lead.status ? lead.status.charAt(0).toUpperCase() + lead.status.slice(1) : 'New'}
               </div>
             </div>
 
-            {/* Details */}
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-white rounded-xl shadow-lg p-8">
-                <h3 className="text-xl font-bold mb-4">Project Details</h3>
+            {/* Details Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-2xl shadow-lg p-8">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">Project Details</h3>
                 <div className="space-y-3 text-gray-700">
                   <p><strong>Service:</strong> {lead.service_type || 'Not specified'}</p>
                   <p><strong>Budget Range:</strong> {lead.budget_range || 'TBD'}</p>
@@ -124,29 +126,13 @@ export default function PortalDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg p-8">
-                <h3 className="text-xl font-bold mb-4">Your Description</h3>
-                <p className="text-gray-700 leading-relaxed">{lead.description}</p>
+              <div className="bg-white rounded-2xl shadow-lg p-8">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">Your Request</h3>
+                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{lead.description}</p>
               </div>
             </div>
 
             {/* Next Steps */}
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl p-8 text-center">
-              <h3 className="text-2xl font-bold mb-2">What Happens Next?</h3>
-              <p className="text-lg">We’ll contact you within 24 hours to schedule a free consultation.</p>
-            </div>
-          </div>
-        ) : null}
-
-        <div className="mt-12 text-center">
-          <button
-            onClick={() => supabase.auth.signOut().then(() => router.push('/portal'))}
-            className="text-red-600 hover:text-red-800 font-medium"
-          >
-            ← Back to Login
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl p-8 text-center">
+              <h3 className="text-2xl font-bold mb-3">What Happens Next?</h3>
+              <p className="text-lg">We’ll contact you within
