@@ -19,7 +19,7 @@ export default function Portal() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white p-10 rounded-xl shadow-lg max-w-md w-full text-center">
-        <h1 className="text-3xl font-bold mb-6">My Project Portal</h1>
+        <h1 className="text-3xl font-bold mb-6">Customer Portal</h1>
         <form onSubmit={sendLink} className="space-y-4">
           <input
             type="email"
