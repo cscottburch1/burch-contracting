@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { z } from 'zod';
-import { Resend } from 'resend';
-
 const schema = z.object({
   name: z.string().min(1),
   phone: z.string().min(1),
