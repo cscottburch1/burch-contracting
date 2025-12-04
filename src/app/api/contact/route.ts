@@ -5,7 +5,7 @@ import { Resend } from 'resend';
 
 const schema = z.object({
   name: z.string().min(1),
-  phone: z.string().min(10),
+  phone: z.string().min(1),
   email: z.string().email(),
   description: z.string().min(1),
   address: z.string().optional(),
@@ -15,83 +15,44 @@ const schema = z.object({
   referralSource: z.string().optional(),
 });
 
-// Log envs for debugging (remove in prod)
-console.log('Supabase URL loaded:', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
-console.log('Supabase Key loaded:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const resendApiKey = process.env.RESEND_API_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase envs – check Vercel settings');
-  throw new Error('Supabase config missing');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-const resend = resendApiKey ? new Resend(resendApiKey) : null;
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const validated = schema.parse(body);
+    const body = schema.parse(await req.json());
 
-    // Map camelCase to snake_case for Supabase (common schema issue)
-    const insertData = {
-      name: validated.name,
-      phone: validated.phone,
-      email: validated.email,
-      address: validated.address || null,
-      service_type: validated.serviceType || null,  // Snake case!
-      budget_range: validated.budgetRange || null,
-      timeframe: validated.timeframe || null,
-      referral_source: validated.referralSource || null,
-      description: validated.description,
-      status: 'new' as const,
-    };
+    const { error } = await supabase.from('contact_leads').insert({
+      name: body.name,
+      phone: body.phone,
+      email: body.email,
+      address: body.address || null,
+      service_type: body.serviceType || null,
+      budget_range: body.budgetRange || null,
+      timeframe: body.timeframe || null,
+      referral_source: body.referralSource || null,
+      description: body.description,
+      status: 'new',
+    });
 
-    console.log('Inserting to Supabase:', insertData);  // Debug log
+    if (error) throw error;
 
-    const { data, error } = await supabase
-      .from('contact_leads')
-      .insert([insertData])
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Supabase insert error:', error);
-      return NextResponse.json({ error: `DB error: ${error.message}` }, { status: 500 });
-    }
-
-    // Send email (non-blocking)
+    // Email you
     if (resend) {
-      try {
-        await resend.emails.send({
-          from: 'noreply@burchcontracting.com',  // Update in Resend dashboard
-          to: ['your-email@example.com'],  // YOUR EMAIL HERE!
-          subject: 'New Burch Contracting Lead',
-          html: `
-            <h2>New Lead!</h2>
-            <p><strong>Name:</strong> ${validated.name}</p>
-            <p><strong>Phone:</strong> ${validated.phone}</p>
-            <p><strong>Email:</strong> ${validated.email}</p>
-            <p><strong>Message:</strong> ${validated.description}</p>
-            <p>Full details saved in Supabase.</p>
-            <p>Submitted: ${new Date().toLocaleString()}</p>
-          `,
-        });
-        console.log('Email sent successfully');
-      } catch (emailErr) {
-        console.error('Email failed (continuing):', emailErr);
-      }
+      await resend.emails.send({
+        from: 'leads@burchcontracting.com',
+        to: ['YOUR_EMAIL_HERE'],          // ← PUT YOUR REAL EMAIL HERE
+        subject: 'New Lead – Burch Contracting',
+        html: `<h2>New Lead</h2><p>Name: ${body.name}<br>Phone: ${body.phone}<br>Email: ${body.email}<br>Message: ${body.description}</p>`,
+      });
     }
 
-    return NextResponse.json({ success: true, data }, { status: 201 });
+    return NextResponse.json({ success: true }, { status: 201 });
   } catch (err) {
-    console.error('Full API error:', err);
-    return NextResponse.json(
-      { error: err instanceof z.ZodError ? 'Invalid form data' : 'Server error – please call us' },
-      { status: err instanceof z.ZodError ? 400 : 500 }
-    );
+    return NextResponse.json({ error: 'failed' }, { status: 500 });
   }
 }
