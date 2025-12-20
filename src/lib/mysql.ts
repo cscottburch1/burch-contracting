@@ -1,0 +1,31 @@
+import mysql from 'mysql2/promise';
+
+const pool = mysql.createPool({
+  host: process.env.MYSQL_HOST || 'localhost',
+  port: parseInt(process.env.MYSQL_PORT || '3306'),
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelayMs: 0,
+});
+
+export async function query(sql: string, values?: any[]) {
+  const connection = await pool.getConnection();
+  try {
+    const [results] = await connection.execute(sql, values || []);
+    return results;
+  } finally {
+    connection.release();
+  }
+}
+
+export async function queryOne(sql: string, values?: any[]) {
+  const results = await query(sql, values);
+  return Array.isArray(results) && results.length > 0 ? results[0] : null;
+}
+
+export default pool;
