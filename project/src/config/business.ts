@@ -22,7 +22,7 @@ export const businessConfig = {
 
   serviceArea: {
     description: "Proudly serving Simpsonville and surrounding communities",
-    locations: ["Simpsonville", "Mauldin", "Ft Inn, Gray Court, Enoree, Woodruff, Laurens, Clinton"]
+    locations: ["Simpsonville", "Mauldin", "Ft Inn", "Gray Court", "Five Forks"]
   },
 
   services: [
@@ -41,11 +41,19 @@ export const businessConfig = {
       tasks: ["Kitchen renovations", "Bathroom makeovers", "Countertop installation"]
     },
     {
-      id: "painting",
-      title: "Interior & Exterior Painting",
-      icon: "Paintbrush",
+      id: "home additions",
+      title: "Decks, Screened Porches, Room Additions",
+      icon: "Hammer",
       description: "Professional painting services.",
       tasks: ["Interior painting", "Exterior painting", "Deck staining"]
+    }
+    
+    {
+      id: "basement finishing",
+      title: "Basement finishing. Basement build-outs",
+      icon: "Hammer",
+      description: "Professional basement finishing.",
+      tasks: ["Turnkey basement build outs and finishing."]
     }
   ],
 
@@ -62,9 +70,9 @@ export const businessConfig = {
   ],
 
   testimonials: [
-    { name: "Sarah M.", location: "YourTown, ST", text: "Excellent work!", rating: 5, project: "Kitchen" },
-    { name: "John D.", location: "Nearby City, ST", text: "Highly recommend!", rating: 5, project: "Deck" },
-    { name: "Maria L.", location: "YourTown, ST", text: "Professional service!", rating: 5, project: "Repairs" }
+    { name: "Sarah M.", location: "Simpsonville, SC", text: "Excellent work!", rating: 5, project: "Kitchen" },
+    { name: "John D.", location: "Mauldin, SC", text: "Highly recommend!", rating: 5, project: "Deck" },
+    { name: "Maria L.", location: "Five Forks", text: "Professional service!", rating: 5, project: "Repairs" }
   ],
 
   projects: [
@@ -84,6 +92,6 @@ export const businessConfig = {
     baseUrl: "https://www.burchcontracting.com",
     defaultTitle: "Burch Contracting | Reliable Home Repair & Remodeling",
     defaultDescription: "Professional contracting services in Simpsonville, SC and surrounding areas.",
-    keywords: "contractor, home repair, remodeling"
+    keywords: "contractor, home repair, remodeling, room additions"
   }
 };
