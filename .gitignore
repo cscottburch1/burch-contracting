@@ -8,25 +8,37 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Dependencies
-node_modules
+node_modules/
+/.pnp
+.pnp.js
+.yarn/install-state.gz
 
 # Build output
-dist
-dist-ssr
 .next/
 out/
 build/
+dist/
+dist-ssr/
 
-# Environment variables - NEVER commit!
+# Next.js specific
+next-env.d.ts
+*.tsbuildinfo
+
+# Cache
+.cache/
+
+# Environment variables - NEVER commit real secrets!
 .env
 .env*.local
 .env.production
-*.local
 
-# IDE
+# Vercel (optional - harmless to keep even if not using Vercel)
+.vercel
+
+# IDE / Editor
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
@@ -36,10 +48,3 @@ build/
 # OS files
 .DS_Store
 Thumbs.db
-
-# Next.js specific
-.next/
-*.tsbuildinfo
-
-# Cache
-.cache/

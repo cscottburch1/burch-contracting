@@ -43,17 +43,17 @@ export const businessConfig = {
     {
       id: "home additions",
       title: "Decks, Screened Porches, Room Additions",
-      icon: "Hammer",
-      description: "Professional painting services.",
-      tasks: ["Interior painting", "Exterior painting", "Deck staining"]
-    }
+      icon: "Home",
+      description: "Professional home addition services by experienced local pros.",
+      tasks: ["Decks", "Screened porches", "Room additions"]
+    },
     
     {
       id: "basement finishing",
       title: "Basement finishing. Basement build-outs",
-      icon: "Hammer",
+      icon: "Home",
       description: "Professional basement finishing.",
-      tasks: ["Turnkey basement build outs and finishing."]
+      tasks: ["Basement build outs, Basement finishing, Basement renovations"]
     }
   ],
 

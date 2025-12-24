@@ -1,125 +1,102 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 
-interface Customer {
-  id: string;
-  user_id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address?: string;
-}
+export type User = {
+  id: string | number;
+  email?: string;
+  name?: string;
+  role?: string;
+};
 
-interface AuthContextType {
+export type Customer = {
+  id: string | number;
+  lead_id?: string | number;
+  name?: string;
+  email?: string;
+  phone?: string;
+  [key: string]: any;
+};
+
+/**
+ * Keep Supabase-like error shape because your UI expects error.message
+ */
+type AuthResult = {
+  error: { message: string } | null;
+};
+
+export type AuthContextValue = {
   user: User | null;
   customer: Customer | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, name: string, phone: string) => Promise<{ error: any }>;
-  signOut: () => Promise<void>;
-}
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+  signIn: (email: string, password: string) => Promise<AuthResult>;
+
+  // IMPORTANT: matches portal/signup usage: signUp(email, password, name, phone)
+  signUp: (email: string, password: string, name?: string, phone?: string) => Promise<AuthResult>;
+
+  signOut: () => Promise<void>;
+};
+
+const AuthContext = createContext<AuthContextValue>({
+  user: null,
+  customer: null,
+  loading: false,
+  signIn: async () => ({ error: { message: 'Auth is not configured yet' } }),
+  signUp: async () => ({ error: { message: 'Auth is not configured yet' } }),
+  signOut: async () => {},
+});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  // Stub: no real auth wired yet
   const [user, setUser] = useState<User | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadCustomerData(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await loadCustomerData(session.user.id);
-        } else {
-          setCustomer(null);
-          setLoading(false);
-        }
-      })();
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const loadCustomerData = async (userId: string) => {
+  const signIn = async (_email: string, _password: string): Promise<AuthResult> => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (error) throw error;
-      setCustomer(data);
-    } catch (error) {
-      console.error('Error loading customer data:', error);
+      setUser(null);
+      setCustomer(null);
+      return {
+        error: { message: 'Login is temporarily disabled while authentication is being migrated.' },
+      };
     } finally {
       setLoading(false);
     }
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
-  };
-
-  const signUp = async (email: string, password: string, name: string, phone: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (error) return { error };
-
-    if (data.user) {
-      const { error: customerError } = await supabase
-        .from('customers')
-        .insert([
-          {
-            user_id: data.user.id,
-            name,
-            email,
-            phone,
-          },
-        ]);
-
-      if (customerError) return { error: customerError };
+  const signUp = async (
+    _email: string,
+    _password: string,
+    _name?: string,
+    _phone?: string
+  ): Promise<AuthResult> => {
+    setLoading(true);
+    try {
+      setUser(null);
+      setCustomer(null);
+      return {
+        error: { message: 'Sign up is temporarily disabled while authentication is being migrated.' },
+      };
+    } finally {
+      setLoading(false);
     }
-
-    return { error: null };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    setUser(null);
+    setCustomer(null);
   };
 
-  return (
-    <AuthContext.Provider value={{ user, customer, loading, signIn, signUp, signOut }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo<AuthContextValue>(
+    () => ({ user, customer, loading, signIn, signUp, signOut }),
+    [user, customer, loading]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  return useContext(AuthContext);
 }

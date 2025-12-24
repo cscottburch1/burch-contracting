@@ -2,7 +2,7 @@ export default function CRMPage() {
   return (
     <div style={{ padding: '2rem' }}>
       <h1>CRM</h1>
-      <p>CRM is temporarily offline while we complete the database migration.</p>
+      <p>CRM is temporarily offline while we complete backend migration.</p>
     </div>
   );
 }

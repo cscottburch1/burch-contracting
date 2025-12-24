@@ -1,90 +1,117 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { query, queryOne } from '@/lib/mysql';
+import { NextResponse } from 'next/server';
+import { query } from '@/lib/mysql';
+
+type Params = { id: string };
+
+function jsonError(message: string, status = 400) {
+  return NextResponse.json({ error: message }, { status });
+}
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: Request,
+  { params }: { params: Params }
 ) {
+  const id = params?.id;
+  if (!id) return jsonError('Missing lead id', 400);
+
   try {
-    const lead = await queryOne(
-      'SELECT * FROM contact_leads WHERE id = ?',
-      [params.id]
+    const rows: any = await query(
+      `SELECT *
+       FROM contact_leads
+       WHERE id = ?
+       LIMIT 1`,
+      [id]
     );
 
-    if (!lead) {
-      return NextResponse.json(
-        { error: 'Lead not found' },
-        { status: 404 }
-      );
-    }
+    const lead = Array.isArray(rows) ? rows[0] : null;
+    if (!lead) return jsonError('Lead not found', 404);
 
-    return NextResponse.json(
-      { lead },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error('API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ lead }, { status: 200 });
+  } catch (err) {
+    console.error('MySQL error fetching lead:', err);
+    return NextResponse.json({ error: 'Failed to fetch lead' }, { status: 500 });
   }
 }
 
 export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  request: Request,
+  { params }: { params: Params }
 ) {
+  const id = params?.id;
+  if (!id) return jsonError('Missing lead id', 400);
+
   try {
     const body = await request.json();
 
-    const updateData: any = {};
-    const updates: string[] = [];
+    // Allow only these fields to be updated (safe whitelist)
+    const allowedFields = new Set([
+      'first_name',
+      'last_name',
+      'email',
+      'phone',
+      'address',
+      'city',
+      'state',
+      'zip',
+      'project_type',
+      'project_description',
+      'status',
+      'source',
+      'budget',
+      'preferred_contact_method',
+      'preferred_contact_time',
+    ]);
+
+    const updates: Record<string, any> = {};
+    for (const [key, value] of Object.entries(body || {})) {
+      if (allowedFields.has(key)) {
+        updates[key] = value;
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return jsonError('No valid fields to update', 400);
+    }
+
+    // Build parameterized SQL
+    const setClauses: string[] = [];
     const values: any[] = [];
 
-    if (body.status !== undefined) {
-      updates.push('status = ?');
-      values.push(body.status);
-    }
-    if (body.priority !== undefined) {
-      updates.push('priority = ?');
-      values.push(body.priority);
-    }
-    if (body.assigned_to !== undefined) {
-      updates.push('assigned_to = ?');
-      values.push(body.assigned_to);
-    }
-    if (body.estimated_value !== undefined) updateData.estimated_value = body.estimated_value;
-    if (body.scheduled_date !== undefined) updateData.scheduled_date = body.scheduled_date;
-    if (body.last_contact_date !== undefined) updateData.last_contact_date = body.last_contact_date;
-    if (body.tags !== undefined) updateData.tags = body.tags;
-
-    updateData.updated_at = new Date().toISOString();
-
-    const { data: lead, error } = await supabase
-      .from('contact_leads')
-      .update(updateData)
-      .eq('id', params.id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Supabase error:', error);
-      return NextResponse.json(
-        { error: 'Failed to update lead' },
-        { status: 500 }
-      );
+    for (const [key, value] of Object.entries(updates)) {
+      setClauses.push(`${key} = ?`);
+      values.push(value);
     }
 
-    return NextResponse.json(
-      { lead },
-      { status: 200 }
+    // always update updated_at if your table has it
+    // If your table doesn't have updated_at, remove the next 2 lines
+    setClauses.push(`updated_at = NOW()`);
+
+    values.push(id);
+
+    const sql = `UPDATE contact_leads SET ${setClauses.join(', ')} WHERE id = ?`;
+    const result: any = await query(sql, values);
+
+    // If nothing updated, it might be invalid id
+    const affected =
+      result?.affectedRows ?? result?.[0]?.affectedRows ?? 0;
+
+    if (!affected) return jsonError('Lead not found', 404);
+
+    // Return updated row
+    const rows: any = await query(
+      `SELECT *
+       FROM contact_leads
+       WHERE id = ?
+       LIMIT 1`,
+      [id]
     );
-  } catch (error) {
-    console.error('API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+
+    const lead = Array.isArray(rows) ? rows[0] : null;
+
+    return NextResponse.json({ lead }, { status: 200 });
+  } catch (err) {
+    console.error('MySQL error updating lead:', err);
+    return NextResponse.json({ error: 'Failed to update lead' }, { status: 500 });
   }
 }
+
