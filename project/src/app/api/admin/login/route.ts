@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const ADMIN_PASSWORD = 'Breana3397@@';
+const ADMIN_PASSWORD = 'Breana3397@!';  // CHANGE THIS!!!
 
 export async function POST(request: Request) {
   const { password } = await request.json();
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       secure: true,
       sameSite: 'strict',
       path: '/',
-      maxAge: 60 * 60 * 8,  // 8 hours
+      maxAge: 28800,  // 8 hours
     });
     return response;
   }

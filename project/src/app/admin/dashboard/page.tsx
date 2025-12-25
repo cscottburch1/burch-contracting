@@ -1,13 +1,13 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-function getSession() {
+function isAuthenticated() {
   const session = cookies().get('admin_session')?.value;
   return session === 'authenticated';
 }
 
 export default function AdminDashboard() {
-  if (!getSession()) {
+  if (!isAuthenticated()) {
     redirect('/admin');
   }
 
@@ -15,21 +15,19 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-10">
         <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
-        <p className="text-xl mb-8">Welcome back! You are securely logged in.</p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+        <p className="text-xl mb-8">Welcome! Secure admin area is live.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <a href="/crm" className="bg-blue-600 text-white p-8 rounded-lg text-center hover:bg-blue-700 transition text-2xl font-bold">
-            View CRM / Leads
+            Manage Leads / CRM
           </a>
           <div className="bg-gray-200 p-8 rounded-lg text-center text-2xl font-bold">
-            Analytics (Coming Soon)
+            Analytics (Coming)
           </div>
           <div className="bg-gray-200 p-8 rounded-lg text-center text-2xl font-bold">
-            Site Settings (Coming Soon)
+            Settings (Coming)
           </div>
         </div>
-
-        <form action="/api/admin/logout" method="post">
+        <form action="/api/admin/logout" method="post" className="mt-12">
           <button className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition font-bold">
             Logout
           </button>
@@ -38,3 +36,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
