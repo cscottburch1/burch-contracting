@@ -3,9 +3,12 @@ import { query } from '@/lib/mysql';
 
 export async function GET(request: NextRequest) {
   try {
-    const leads = await query(
-      'SELECT * FROM contact_leads ORDER BY created_at DESC'
-    );
+    const sql = `
+      SELECT * FROM contact_leads
+      ORDER BY created_at DESC
+    `;
+
+    const leads = await query(sql);
 
     return NextResponse.json(
       { leads },
