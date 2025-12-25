@@ -1,279 +1,435 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
+import { Section } from '@/components/ui/Section';
+import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
+import { Card } from '@/components/ui/Card';
+import { businessConfig } from '@/config/business';
 
-type FormState = {
-  // Honeypot (bots fill it, humans don't)
-  company: string;
-
+interface FormData {
   name: string;
-  email: string;
   phone: string;
+  email: string;
   address: string;
   serviceType: string;
   budgetRange: string;
   timeframe: string;
   referralSource: string;
   description: string;
-};
+}
+
+interface FormErrors {
+  [key: string]: string;
+}
 
 export default function ContactPage() {
-  const [form, setForm] = useState<FormState>({
-    company: '',
+  const [formData, setFormData] = useState<FormData>({
     name: '',
-    email: '',
     phone: '',
+    email: '',
     address: '',
     serviceType: '',
     budgetRange: '',
     timeframe: '',
     referralSource: '',
-    description: '',
+    description: ''
   });
 
-  const [submitting, setSubmitting] = useState(false);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  const canSubmit = useMemo(() => {
-    return form.email.trim().length > 3 && form.description.trim().length > 5 && !submitting;
-  }, [form.email, form.description, submitting]);
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
 
-  function update<K extends keyof FormState>(key: K, value: FormState[K]) {
-    setForm(prev => ({ ...prev, [key]: value }));
-  }
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/.test(formData.phone)) {
+      newErrors.phone = 'Please enter a valid phone number';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'Project description is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSuccessMsg(null);
-    setErrorMsg(null);
 
-    // Basic client-side validation (server still validates)
-    if (!form.email.trim() || !form.description.trim()) {
-      setErrorMsg('Please include your email and a brief description of your project.');
+    if (!validateForm()) {
       return;
     }
 
-    setSubmitting(true);
+    setIsSubmitting(true);
+
     try {
-      const res = await fetch('/api/contact', {
+      const response = await fetch('/api/contact', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // Include all fields, including honeypot "company"
-        body: JSON.stringify(form),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
 
-      const data = await res.json().catch(() => ({} as any));
-
-      if (!res.ok) {
-        setErrorMsg(data?.error || 'Submission failed. Please try again.');
-        setSubmitting(false);
-        return;
+      if (response.ok) {
+        setSubmitSuccess(true);
+        setFormData({
+          name: '',
+          phone: '',
+          email: '',
+          address: '',
+          serviceType: '',
+          budgetRange: '',
+          timeframe: '',
+          referralSource: '',
+          description: ''
+        });
+      } else {
+        setErrors({ submit: 'Something went wrong. Please try again or call us directly.' });
       }
-
-      setSuccessMsg('Thanks! Your request was received. We’ll follow up shortly.');
-      setForm({
-        company: '',
-        name: '',
-        email: '',
-        phone: '',
-        address: '',
-        serviceType: '',
-        budgetRange: '',
-        timeframe: '',
-        referralSource: '',
-        description: '',
-      });
-    } catch (err) {
-      setErrorMsg('Network error. Please try again or call (864) 724-4600.');
+    } catch (error) {
+      setErrors({ submit: 'Something went wrong. Please try again or call us directly.' });
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  if (submitSuccess) {
+    return (
+      <>
+        <section className="bg-gradient-to-br from-blue-900 to-gray-900 text-white py-16 md:py-24">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 className="text-4xl md:text-5xl font-bold mb-6">Contact Us</h1>
+          </div>
+        </section>
+
+        <Section background="white" padding="lg">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Icon name="Check" className="text-green-600" size={48} />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Thank You!</h2>
+            <p className="text-xl text-gray-600 mb-8">
+              We've received your request and will get back to you within 24 hours. If you need immediate assistance, please give us a call.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button variant="primary" size="lg" href="/">
+                Return to Home
+              </Button>
+              <Button variant="outline" size="lg" href={`tel:${businessConfig.contact.phone}`}>
+                <Icon name="Phone" size={20} />
+                Call Now
+              </Button>
+            </div>
+          </div>
+        </Section>
+      </>
+    );
   }
 
   return (
-    <main className="min-h-screen bg-white">
-      <div className="mx-auto max-w-3xl px-4 py-10">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Contact Burch Contracting</h1>
-        <p className="mt-2 text-gray-600">
-          Tell us about your project. We’ll respond as soon as possible.
-        </p>
-
-        <div className="mt-8 rounded-xl border border-gray-200 p-6 shadow-sm">
-          {successMsg && (
-            <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-green-800">
-              {successMsg}
-            </div>
-          )}
-          {errorMsg && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-red-800">
-              {errorMsg}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Honeypot field (hidden). Bots fill it; humans never see it. */}
-            <input
-              type="text"
-              name="company"
-              value={form.company}
-              onChange={(e) => update('company', e.target.value)}
-              tabIndex={-1}
-              autoComplete="off"
-              className="hidden"
-              aria-hidden="true"
-            />
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-900">Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={form.name}
-                  onChange={(e) => update('name', e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-900"
-                  placeholder="Your name"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-900">
-                  Email <span className="text-red-600">*</span>
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={(e) => update('email', e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-900"
-                  placeholder="you@example.com"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-900">Phone</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={form.phone}
-                  onChange={(e) => update('phone', e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-900"
-                  placeholder="(864) 724-4600"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-900">Address</label>
-                <input
-                  type="text"
-                  name="address"
-                  value={form.address}
-                  onChange={(e) => update('address', e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-900"
-                  placeholder="City, State"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-900">Service Type</label>
-                <select
-                  name="serviceType"
-                  value={form.serviceType}
-                  onChange={(e) => update('serviceType', e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-900"
-                >
-                  <option value="">Select…</option>
-                  <option value="Kitchen Remodel">Kitchen Remodel</option>
-                  <option value="Bathroom Remodel">Bathroom Remodel</option>
-                  <option value="Room Addition">Room Addition</option>
-                  <option value="Basement Finish">Basement Finish</option>
-                  <option value="Handyman / Repairs">Handyman / Repairs</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-900">Budget Range</label>
-                <select
-                  name="budgetRange"
-                  value={form.budgetRange}
-                  onChange={(e) => update('budgetRange', e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-900"
-                >
-                  <option value="">Select…</option>
-                  <option value="Under $10k">Under $10k</option>
-                  <option value="$10k–$25k">$10k–$25k</option>
-                  <option value="$25k–$50k">$25k–$50k</option>
-                  <option value="$50k–$100k">$50k–$100k</option>
-                  <option value="$100k+">$100k+</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-900">Timeframe</label>
-                <select
-                  name="timeframe"
-                  value={form.timeframe}
-                  onChange={(e) => update('timeframe', e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-900"
-                >
-                  <option value="">Select…</option>
-                  <option value="ASAP">ASAP</option>
-                  <option value="1–3 months">1–3 months</option>
-                  <option value="3–6 months">3–6 months</option>
-                  <option value="6+ months">6+ months</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-900">How did you hear about us?</label>
-                <select
-                  name="referralSource"
-                  value={form.referralSource}
-                  onChange={(e) => update('referralSource', e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-900"
-                >
-                  <option value="">Select…</option>
-                  <option value="Google">Google</option>
-                  <option value="Referral">Referral</option>
-                  <option value="Facebook">Facebook</option>
-                  <option value="Yard Sign">Yard Sign</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-900">
-                Project Description <span className="text-red-600">*</span>
-              </label>
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={(e) => update('description', e.target.value)}
-                className="min-h-[140px] w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-900"
-                placeholder="Tell us what you want to build, repair, or remodel…"
-                required
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Prefer to call? <a className="underline" href="tel:8647244600">(864) 724-4600</a>
-              </p>
-            </div>
-
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              className="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {submitting ? 'Sending…' : 'Send Request'}
-            </button>
-          </form>
+    <>
+      <section className="bg-gradient-to-br from-blue-900 to-gray-900 text-white py-16 md:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">Get Your Free Estimate</h1>
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            Tell us about your project and we'll get back to you with a detailed estimate
+          </p>
         </div>
-      </div>
-    </main>
+      </section>
+
+      <Section background="white" padding="lg">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 max-w-7xl mx-auto">
+          <div className="lg:col-span-2">
+            <Card padding="lg">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                        errors.name ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="John Smith"
+                    />
+                    {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
+                  </div>
+
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Phone <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                        errors.phone ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="(555) 123-4567"
+                    />
+                    {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone}</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                        errors.email ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="john@example.com"
+                    />
+                    {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
+                  </div>
+
+                  <div>
+                    <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Address or City/Area
+                    </label>
+                    <input
+                      type="text"
+                      id="address"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="YourTown, ST"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="serviceType" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Service Type
+                    </label>
+                    <select
+                      id="serviceType"
+                      name="serviceType"
+                      value={formData.serviceType}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="">Select a service...</option>
+                      {businessConfig.services.map(service => (
+                        <option key={service.id} value={service.id}>{service.title}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="budgetRange" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Budget Range
+                    </label>
+                    <select
+                      id="budgetRange"
+                      name="budgetRange"
+                      value={formData.budgetRange}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="">Select a range...</option>
+                      <option value="under-1000">Under $1,000</option>
+                      <option value="1000-5000">$1,000 - $5,000</option>
+                      <option value="5000-10000">$5,000 - $10,000</option>
+                      <option value="10000-25000">$10,000 - $25,000</option>
+                      <option value="25000-plus">$25,000+</option>
+                      <option value="not-sure">Not sure yet</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="timeframe" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Preferred Timeframe
+                    </label>
+                    <select
+                      id="timeframe"
+                      name="timeframe"
+                      value={formData.timeframe}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="">Select timeframe...</option>
+                      <option value="asap">ASAP</option>
+                      <option value="within-1-month">Within 1 month</option>
+                      <option value="1-3-months">1-3 months</option>
+                      <option value="3-plus-months">3+ months</option>
+                      <option value="flexible">Flexible</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="referralSource" className="block text-sm font-semibold text-gray-700 mb-2">
+                      How did you hear about us?
+                    </label>
+                    <select
+                      id="referralSource"
+                      name="referralSource"
+                      value={formData.referralSource}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="">Select option...</option>
+                      <option value="google">Google Search</option>
+                      <option value="social-media">Social Media</option>
+                      <option value="referral">Friend/Family Referral</option>
+                      <option value="previous-customer">Previous Customer</option>
+                      <option value="yard-sign">Yard Sign</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Project Description <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    rows={6}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      errors.description ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Tell us about your project... What work needs to be done? Any specific requirements or concerns?"
+                  />
+                  {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
+                </div>
+
+                {errors.submit && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    {errors.submit}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Sending...' : 'Submit Request'}
+                  {!isSubmitting && <Icon name="ArrowRight" size={20} />}
+                </Button>
+
+                <p className="text-sm text-gray-500 text-center">
+                  By submitting this form, you agree to be contacted about your project. We respect your privacy and will never share your information.
+                </p>
+              </form>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card padding="lg">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Contact Information</h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Icon name="Phone" className="text-blue-600 flex-shrink-0 mt-1" size={20} />
+                  <div>
+                    <p className="font-semibold text-gray-900">Phone</p>
+                    <a href={`tel:${businessConfig.contact.phone}`} className="text-blue-600 hover:underline">
+                      {businessConfig.contact.phone}
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Icon name="Mail" className="text-blue-600 flex-shrink-0 mt-1" size={20} />
+                  <div>
+                    <p className="font-semibold text-gray-900">Email</p>
+                    <a href={`mailto:${businessConfig.contact.email}`} className="text-blue-600 hover:underline">
+                      {businessConfig.contact.email}
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Icon name="MapPin" className="text-blue-600 flex-shrink-0 mt-1" size={20} />
+                  <div>
+                    <p className="font-semibold text-gray-900">Service Area</p>
+                    <p className="text-gray-600">{businessConfig.contact.city}, {businessConfig.contact.state}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Icon name="Clock" className="text-blue-600 flex-shrink-0 mt-1" size={20} />
+                  <div>
+                    <p className="font-semibold text-gray-900">Business Hours</p>
+                    <p className="text-gray-600 whitespace-pre-line text-sm">{businessConfig.contact.hours}</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card padding="lg" className="bg-blue-50">
+              <h3 className="text-lg font-bold text-gray-900 mb-3">What Happens Next?</h3>
+              <ol className="space-y-3 text-sm text-gray-700">
+                <li className="flex gap-2">
+                  <span className="font-bold text-blue-600">1.</span>
+                  <span>We'll review your request within 24 hours</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-blue-600">2.</span>
+                  <span>We'll contact you to schedule a consultation</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-blue-600">3.</span>
+                  <span>We'll visit your property to assess the project</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-blue-600">4.</span>
+                  <span>You'll receive a detailed written estimate</span>
+                </li>
+              </ol>
+            </Card>
+          </div>
+        </div>
+      </Section>
+    </>
   );
 }

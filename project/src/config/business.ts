@@ -10,7 +10,7 @@ export const businessConfig = {
     city: "Simpsonville",
     state: "SC",
     zip: "29681",
-    hours: "Monday - Friday: 8:00 AM - 5:00 PM\nSaturday: Appt Only"
+    hours: "Monday - Friday: 8:00 AM - 5:00 PM\nSaturday: 8Appt Only"
   },
 
   social: {
@@ -22,7 +22,7 @@ export const businessConfig = {
 
   serviceArea: {
     description: "Proudly serving Simpsonville and surrounding communities",
-    locations: ["Simpsonville", "Mauldin", "Ft Inn", "Gray Court", "Five Forks"]
+    locations: ["Simpsonville", "Fountain Inn", "Mauldin", "Laurens"]
   },
 
   services: [
@@ -41,19 +41,11 @@ export const businessConfig = {
       tasks: ["Kitchen renovations", "Bathroom makeovers", "Countertop installation"]
     },
     {
-      id: "home additions",
-      title: "Decks, Screened Porches, Room Additions",
-      icon: "Home",
-      description: "Professional home addition services by experienced local pros.",
-      tasks: ["Decks", "Screened porches", "Room additions"]
-    },
-    
-    {
-      id: "basement finishing",
-      title: "Basement finishing. Basement build-outs",
-      icon: "Home",
-      description: "Professional basement finishing.",
-      tasks: ["Basement build outs, Basement finishing, Basement renovations"]
+      id: "additions",
+      title: "Screened Porches & Decks",
+      icon: "Paintbrush",
+      description: "Professional additions and outdoor living spaces.",
+      tasks: ["Screened porch construction", "Deck building", "Room Additions"]
     }
   ],
 
@@ -70,9 +62,9 @@ export const businessConfig = {
   ],
 
   testimonials: [
-    { name: "Sarah M.", location: "Simpsonville, SC", text: "Excellent work!", rating: 5, project: "Kitchen" },
-    { name: "John D.", location: "Mauldin, SC", text: "Highly recommend!", rating: 5, project: "Deck" },
-    { name: "Maria L.", location: "Five Forks", text: "Professional service!", rating: 5, project: "Repairs" }
+    { name: "Sarah M.", location: "Simpsonville", text: "Excellent work!", rating: 5, project: "Kitchen" },
+    { name: "John D.", location: "Fountain Inn", text: "Highly recommend!", rating: 5, project: "Deck" },
+    { name: "Maria L.", location: "Simpsonville", text: "Professional service!", rating: 5, project: "Repairs" }
   ],
 
   projects: [
@@ -91,7 +83,7 @@ export const businessConfig = {
   seo: {
     baseUrl: "https://www.burchcontracting.com",
     defaultTitle: "Burch Contracting | Reliable Home Repair & Remodeling",
-    defaultDescription: "Professional contracting services in Simpsonville, SC and surrounding areas.",
-    keywords: "contractor, home repair, remodeling, room additions"
+    defaultDescription: "Professional contracting services in Simpsonville, SC.",
+    keywords: "contractor, home repair, remodeling, handyman, kitchen remodel, bathroom remodel, decks, porches"
   }
 };
