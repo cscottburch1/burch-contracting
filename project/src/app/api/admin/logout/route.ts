@@ -1,10 +1,8 @@
-import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 export async function POST() {
-  const response = NextResponse.json({ success: true });
+  const response = NextResponse.redirect(new URL('/admin', 'https://burchcontracting.com'));
   response.cookies.delete('admin_session');
-  response.cookies.set('admin_session', '', { maxAge: 0 });
-  return redirect('/admin');
-}
+  return response;
+}1~nano project/src/app/api/admin/logout/route.ts
