@@ -1,7 +1,10 @@
+import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
-import { clearAdminSessionCookie } from '@/lib/adminAuth';
+import { cookies } from 'next/headers';
 
 export async function POST() {
-  clearAdminSessionCookie();
-  return NextResponse.json({ success: true }, { status: 200 });
+  const response = NextResponse.json({ success: true });
+  response.cookies.delete('admin_session');
+  response.cookies.set('admin_session', '', { maxAge: 0 });
+  return redirect('/admin');
 }

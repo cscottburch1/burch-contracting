@@ -1,17 +1,25 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function AdminLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Temporary simple check (replace with real auth later)
-    if (password === 'tempadmin123') {  // Change this!
-      alert('Login successful! (Next: Add real session/auth)');
-      // Later: Set cookie or redirect to dashboard
+    setError('');
+
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+
+    if (res.ok) {
+      router.push('/admin/dashboard');
     } else {
       setError('Invalid password');
     }
@@ -19,30 +27,26 @@ export default function AdminLogin() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded shadow-md w-96">
-        <h1 className="text-2xl font-bold mb-6">Admin Login</h1>
-        <form onSubmit={handleSubmit}>
+      <div className="bg-white p-8 rounded-lg shadow-lg w-96">
+        <h1 className="text-3xl font-bold mb-6 text-center">Admin Login</h1>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="password"
-            placeholder="Enter admin password"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded mb-4"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
             required
           />
-          {error && <p className="text-red-500 mb-4">{error}</p>}
+          {error && <p className="text-red-500 text-center">{error}</p>}
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
           >
             Login
           </button>
         </form>
-        <p className="mt-4 text-sm text-gray-600">
-          This is a starter — we'll secure it properly next.
-        </p>
       </div>
     </div>
   );
 }
-

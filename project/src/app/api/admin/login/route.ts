@@ -1,39 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { setAdminSessionCookie } from '@/lib/adminAuth';
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
-function safeEqual(a: string, b: string) {
-  const aa = Buffer.from(a);
-  const bb = Buffer.from(b);
-  if (aa.length !== bb.length) return false;
-  return crypto.timingSafeEqual(aa, bb);
-}
+const ADMIN_PASSWORD = 'your-strong-password-here'; // CHANGE THIS!
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const email = String(body?.email || '').trim();
-    const password = String(body?.password || '');
+export async function POST(request: Request) {
+  const { password } = await request.json();
 
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const adminPassword = process.env.ADMIN_PASSWORD;
-
-    if (!adminEmail || !adminPassword) {
-      return NextResponse.json({ error: 'Admin auth not configured on server' }, { status: 500 });
-    }
-
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
-    }
-
-    if (!safeEqual(email, adminEmail) || !safeEqual(password, adminPassword)) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-    }
-
-    setAdminSessionCookie();
-    return NextResponse.json({ success: true }, { status: 200 });
-  } catch (e) {
-    console.error('Admin login error:', e);
-    return NextResponse.json({ error: 'Login failed' }, { status: 500 });
+  if (password === ADMIN_PASSWORD) {
+    const response = NextResponse.json({ success: true });
+    response.cookies.set('admin_session', 'authenticated', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 60 * 60 * 8, // 8 hours
+      path: '/',
+    });
+    return response;
   }
+
+  return NextResponse.json({ error: 'Invalid' }, { status: 401 });
 }
