@@ -9,6 +9,30 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Lead, LeadNote, LeadActivity } from '@/types/crm';
 
+const [loading, setLoading] = useState(false);
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
+  setLoading(true);
+  try {
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    if (res.ok) {
+      router.push('/admin/dashboard');
+    } else {
+      setError('Invalid password');
+    }
+  } catch (err) {
+    setError('Network error. Try again.');
+  } finally {
+    setLoading(false);
+  }
+};
+
 export default function AdminLeadDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -22,6 +46,11 @@ export default function AdminLeadDetailPage() {
   const [isImportant, setIsImportant] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState<Partial<Lead>>({});
+
+  <input
+  autoFocus
+  // ... other props
+/>
 
   useEffect(() => {
     if (leadId) {
