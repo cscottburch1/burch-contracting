@@ -43,7 +43,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const filteredLeads = leads.filter(lead => {
+  const filteredLeads = leads.filter((lead: Lead) => {
     const matchesStatus = filterStatus === 'all' || lead.status === filterStatus;
     const matchesSearch = !searchQuery ||
       lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
