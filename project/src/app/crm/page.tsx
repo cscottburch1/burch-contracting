@@ -1,206 +1,274 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import { Search, Filter, Plus, Phone, Mail, Calendar, DollarSign } from 'lucide-react';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-interface Lead {
-  id: string;
-  created_at: string;
-  name: string;
-  email: string;
-  phone: string;
-  service_type: string;
-  description: string;
-  status: 'new' | 'contacted' | 'quoted' | 'won' | 'lost';
-}
+import React, { useState, useEffect } from 'react';
+import { Section } from '@/components/ui/Section';
+import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Lead, LeadStatistics } from '@/types/crm';
 
 export default function CRMPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [stats, setStats] = useState<LeadStatistics[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-
-  // Fetch initial leads
-  const fetchLeads = async () => {
-    const { data, error } = await supabase
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setLeads(data as Lead[]);
-    }
-    setLoading(false);
-  };
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   useEffect(() => {
     fetchLeads();
-
-    // Real-time subscription
-    const channel = supabase
-      .channel('public:leads')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'leads' },
-        (payload) => {
-          setLeads((current) => [payload.new as Lead, ...current]);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'leads' },
-        (payload) => {
-          setLeads((current) =>
-            current.map((lead) => (lead.id === payload.new.id ? (payload.new as Lead) : lead))
-          );
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    fetchStatistics();
   }, []);
 
-  const filteredLeads = leads.filter((lead) => {
-    const matchesSearch =
-      lead.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.phone?.includes(searchTerm);
-    const matchesFilter = filterStatus === 'all' || lead.status === filterStatus;
-    return matchesSearch && matchesFilter;
+  const fetchLeads = async () => {
+    try {
+      const response = await fetch('/api/crm/leads');
+      const data = await response.json();
+      // API may return an object with a `leads` array or the array directly.
+      const leadsPayload = Array.isArray(data) ? data : (data.leads ?? []);
+      if (Array.isArray(leadsPayload)) {
+        setLeads(leadsPayload as Lead[]);
+      } else {
+        setLeads([]);
+      }
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStatistics = async () => {
+    try {
+      const response = await fetch('/api/crm/statistics');
+      const data = await response.json();
+      setStats(data.statistics || []);
+    } catch (error) {
+      console.error('Error fetching statistics:', error);
+    }
+  };
+
+  const filteredLeads = leads.filter(lead => {
+    const matchesStatus = filterStatus === 'all' || lead.status === filterStatus;
+    const matchesSearch = !searchQuery ||
+      lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.phone.includes(searchQuery);
+    return matchesStatus && matchesSearch;
   });
 
-  const stats = {
-    total: leads.length,
-    new: leads.filter((l) => l.status === 'new').length,
-    contacted: leads.filter((l) => l.status === 'contacted').length,
-    won: leads.filter((l) => l.status === 'won').length,
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      new: 'bg-blue-100 text-blue-700',
+      contacted: 'bg-purple-100 text-purple-700',
+      qualified: 'bg-green-100 text-green-700',
+      proposal: 'bg-yellow-100 text-yellow-700',
+      negotiation: 'bg-orange-100 text-orange-700',
+      won: 'bg-green-600 text-white',
+      lost: 'bg-gray-300 text-gray-700'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-700';
   };
+
+  const getPriorityColor = (priority: string) => {
+    const colors: Record<string, string> = {
+      low: 'bg-gray-100 text-gray-600',
+      medium: 'bg-blue-100 text-blue-600',
+      high: 'bg-orange-100 text-orange-600',
+      urgent: 'bg-red-100 text-red-600'
+    };
+    return colors[priority] || 'bg-gray-100 text-gray-600';
+  };
+
+  const formatCurrency = (value?: number) => {
+    if (!value) return 'N/A';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0
+    }).format(value);
+  };
+
+  const formatDate = (date?: string) => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const totalLeads = leads.length;
+  const totalValue = leads.reduce((sum, lead) => sum + (lead.estimated_value || 0), 0);
+  const newLeads = leads.filter(l => l.status === 'new').length;
+  const wonLeads = leads.filter(l => l.status === 'won').length;
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center">Loading CRM...</div>
+      <Section padding="lg">
+        <div className="text-center py-12">
+          <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading CRM data...</p>
         </div>
-      </div>
+      </Section>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Burch Contracting CRM</h1>
-          <p className="text-gray-600">Real-time lead dashboard • Updates instantly</p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-3xl font-bold text-blue-600">{stats.total}</div>
-            <div className="text-gray-600">Total Leads</div>
-          </div>
-          <div className="bg-orange-50 p-6 rounded-lg shadow">
-            <div className="text-3xl font-bold text-orange-600">{stats.new}</div>
-            <div className="text-gray-600">New</div>
-          </div>
-          <div className="bg-yellow-50 p-6 rounded-lg shadow">
-            <div className="text-3xl font-bold text-yellow-600">{stats.contacted}</div>
-            <div className="text-gray-600">Contacted</div>
-          </div>
-          <div className="bg-green-50 p-6 rounded-lg shadow">
-            <div className="text-3xl font-bold text-green-600">{stats.won}</div>
-            <div className="text-gray-600">Jobs Won</div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search leads..."
-              className="w-full pl-10 pr-4 py-3 border rounded-lg"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <select
-            className="px-4 py-3 border rounded-lg"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
-            <option value="all">All Status</option>
-            <option value="new">New</option>
-            <option value="contacted">Contacted</option>
-            <option value="quoted">Quoted</option>
-            <option value="won">Won</option>
-            <option value="lost">Lost</option>
-          </select>
-        </div>
-
-        {/* Leads Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          {filteredLeads.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
-              No leads yet — submit a test from /contact to see real-time magic!
+    <>
+      <section className="bg-gradient-to-br from-blue-900 to-gray-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">CRM Dashboard</h1>
+              <p className="text-gray-300">Manage leads and track your sales pipeline</p>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
+            <Button variant="primary" size="md" href="/contact">
+              <Icon name="User" size={20} />
+              New Lead
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <Section background="gray" padding="lg">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm mb-1">Total Leads</p>
+                <p className="text-3xl font-bold">{totalLeads}</p>
+              </div>
+              <Icon name="User" size={40} className="opacity-80" />
+            </div>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm mb-1">Total Value</p>
+                <p className="text-3xl font-bold">{formatCurrency(totalValue)}</p>
+              </div>
+              <Icon name="Award" size={40} className="opacity-80" />
+            </div>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm mb-1">New Leads</p>
+                <p className="text-3xl font-bold">{newLeads}</p>
+              </div>
+              <Icon name="Star" size={40} className="opacity-80" />
+            </div>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm mb-1">Won Deals</p>
+                <p className="text-3xl font-bold">{wonLeads}</p>
+              </div>
+              <Icon name="Check" size={40} className="opacity-80" />
+            </div>
+          </Card>
+        </div>
+
+        <Card padding="lg">
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="Search leads by name, email, or phone..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Statuses</option>
+              <option value="new">New</option>
+              <option value="contacted">Contacted</option>
+              <option value="qualified">Qualified</option>
+              <option value="proposal">Proposal</option>
+              <option value="negotiation">Negotiation</option>
+              <option value="won">Won</option>
+              <option value="lost">Lost</option>
+            </select>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b-2 border-gray-200">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Contact</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Service</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Priority</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Value</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Created</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLeads.length === 0 ? (
                   <tr>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Lead</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Service</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Details</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Status</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Received</th>
+                    <td colSpan={8} className="text-center py-12 text-gray-500">
+                      No leads found
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredLeads.map((lead) => (
-                    <tr key={lead.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="font-medium">{lead.name || 'No name'}</div>
-                        <div className="text-sm text-gray-600 flex items-center gap-4 mt-1">
-                          {lead.email && <span className="flex items-center gap-1"><Mail className="h-4 w-4" />{lead.email}</span>}
-                          {lead.phone && <span className="flex items-center gap-1"><Phone className="h-4 w-4" />{lead.phone}</span>}
-                        </div>
+                ) : (
+                  filteredLeads.map((lead) => (
+                    <tr key={lead.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-4 px-4">
+                        <p className="font-semibold text-gray-900">{lead.name}</p>
                       </td>
-                      <td className="px-6 py-4 text-sm">{lead.service_type || '—'}</td>
-                      <td className="px-6 py-4 text-sm max-w-xs truncate">
-                        {lead.description || 'No description'}
+                      <td className="py-4 px-4">
+                        <p className="text-sm text-gray-600">{lead.email}</p>
+                        <p className="text-sm text-gray-600">{lead.phone}</p>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                          lead.status === 'new' ? 'bg-orange-100 text-orange-800' :
-                          lead.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
-                          lead.status === 'won' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {lead.status || 'new'}
+                      <td className="py-4 px-4">
+                        <span className="text-sm text-gray-700">{lead.service_type || 'N/A'}</span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(lead.status)}`}>
+                          {lead.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {new Date(lead.created_at).toLocaleDateString()} <br />
-                        {new Date(lead.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <td className="py-4 px-4">
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(lead.priority)}`}>
+                          {lead.priority}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-sm text-gray-700">
+                        {formatCurrency(lead.estimated_value)}
+                      </td>
+                      <td className="py-4 px-4 text-sm text-gray-600">
+                        {formatDate(lead.created_at)}
+                      </td>
+                      <td className="py-4 px-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          href={`/crm/leads/${lead.id}`}
+                        >
+                          View
+                        </Button>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </Section>
+    </>
   );
 }

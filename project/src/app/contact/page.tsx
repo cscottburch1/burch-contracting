@@ -7,11 +7,6 @@ import { Icon } from '@/components/ui/Icon';
 import { Card } from '@/components/ui/Card';
 import { businessConfig } from '@/config/business';
 
-// -------------------------------------------------
-// TURNSTILE – add your sitekey from Cloudflare
-// -------------------------------------------------
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
-
 interface FormData {
   name: string;
   phone: string;
@@ -38,31 +33,35 @@ export default function ContactPage() {
     budgetRange: '',
     timeframe: '',
     referralSource: '',
-    description: '',
+    description: ''
   });
+
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-
-  // -------------------------------------------------
-  // TURNSTILE CALLBACK
-  // -------------------------------------------------
-  const onTurnstileVerify = (token: string) => {
-    setTurnstileToken(token);
-  };
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
-    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
-    else if (!/^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/.test(formData.phone))
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/.test(formData.phone)) {
       newErrors.phone = 'Please enter a valid phone number';
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
-    if (!formData.description.trim()) newErrors.description = 'Project description is required';
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'Project description is required';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -70,18 +69,20 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
-    if (!turnstileToken) {
-      setErrors({ submit: 'Please complete the security check.' });
+
+    if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
+
     try {
-      const response = await Prayers.fetch('/api/contact', {
+      const response = await fetch('/api/contact', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, 'cf-turnstile-response': turnstileToken }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
 
       if (response.ok) {
@@ -95,31 +96,26 @@ export default function ContactPage() {
           budgetRange: '',
           timeframe: '',
           referralSource: '',
-          description: '',
+          description: ''
         });
-        setTurnstileToken(null);
       } else {
-        const err = await response.json();
-        setErrors({ submit: err.error || 'Something went wrong. Please try again.' });
+        setErrors({ submit: 'Something went wrong. Please try again or call us directly.' });
       }
-    } catch (err) {
-      setErrors({ submit: 'Network error. Please try again or call us.' });
+    } catch (error) {
+      setErrors({ submit: 'Something went wrong. Please try again or call us directly.' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
-  // -------------------------------------------------
-  // SUCCESS SCREEN
-  // -------------------------------------------------
   if (submitSuccess) {
     return (
       <>
@@ -128,6 +124,7 @@ export default function ContactPage() {
             <h1 className="text-4xl md:text-5xl font-bold mb-6">Contact Us</h1>
           </div>
         </section>
+
         <Section background="white" padding="lg">
           <div className="max-w-2xl mx-auto text-center">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -152,9 +149,6 @@ export default function ContactPage() {
     );
   }
 
-  // -------------------------------------------------
-  // MAIN FORM
-  // -------------------------------------------------
   return (
     <>
       <section className="bg-gradient-to-br from-blue-900 to-gray-900 text-white py-16 md:py-24">
@@ -171,7 +165,6 @@ export default function ContactPage() {
           <div className="lg:col-span-2">
             <Card padding="lg">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* ---- NAME & PHONE ---- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -210,7 +203,6 @@ export default function ContactPage() {
                   </div>
                 </div>
 
-                {/* ---- EMAIL & ADDRESS ---- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -246,7 +238,6 @@ export default function ContactPage() {
                   </div>
                 </div>
 
-                {/* ---- SERVICE TYPE & BUDGET ---- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="serviceType" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -260,10 +251,8 @@ export default function ContactPage() {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     >
                       <option value="">Select a service...</option>
-                      {businessConfig.services.map((service) => (
-                        <option key={service.id} value={service.id}>
-                          {service.title}
-                        </option>
+                      {businessConfig.services.map(service => (
+                        <option key={service.id} value={service.id}>{service.title}</option>
                       ))}
                     </select>
                   </div>
@@ -290,7 +279,6 @@ export default function ContactPage() {
                   </div>
                 </div>
 
-                {/* ---- TIMEFRAME & REFERRAL ---- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="timeframe" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -334,7 +322,6 @@ export default function ContactPage() {
                   </div>
                 </div>
 
-                {/* ---- DESCRIPTION ---- */}
                 <div>
                   <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2">
                     Project Description <span className="text-red-500">*</span>
@@ -353,25 +340,12 @@ export default function ContactPage() {
                   {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
                 </div>
 
-                {/* ---- TURNSTILE ---- */}
-                {TURNSTILE_SITE_KEY && (
-                  <div className="flex justify-center">
-                    <div
-                      className="cf-turnstile"
-                      data-sitekey={TURNSTILE_SITE_KEY}
-                      data-callback="onTurnstileVerify"
-                    ></div>
-                  </div>
-                )}
-
-                {/* ---- SUBMIT ERROR ---- */}
                 {errors.submit && (
                   <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                     {errors.submit}
                   </div>
                 )}
 
-                {/* ---- SUBMIT BUTTON ---- */}
                 <Button
                   type="submit"
                   variant="primary"
@@ -390,9 +364,69 @@ export default function ContactPage() {
             </Card>
           </div>
 
-          {/* ---- SIDEBAR (contact info + next steps) ---- */}
           <div className="space-y-6">
-            {/* ... your existing sidebar code ... */}
+            <Card padding="lg">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Contact Information</h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Icon name="Phone" className="text-blue-600 flex-shrink-0 mt-1" size={20} />
+                  <div>
+                    <p className="font-semibold text-gray-900">Phone</p>
+                    <a href={`tel:${businessConfig.contact.phone}`} className="text-blue-600 hover:underline">
+                      {businessConfig.contact.phone}
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Icon name="Mail" className="text-blue-600 flex-shrink-0 mt-1" size={20} />
+                  <div>
+                    <p className="font-semibold text-gray-900">Email</p>
+                    <a href={`mailto:${businessConfig.contact.email}`} className="text-blue-600 hover:underline">
+                      {businessConfig.contact.email}
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Icon name="MapPin" className="text-blue-600 flex-shrink-0 mt-1" size={20} />
+                  <div>
+                    <p className="font-semibold text-gray-900">Service Area</p>
+                    <p className="text-gray-600">{businessConfig.contact.city}, {businessConfig.contact.state}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Icon name="Clock" className="text-blue-600 flex-shrink-0 mt-1" size={20} />
+                  <div>
+                    <p className="font-semibold text-gray-900">Business Hours</p>
+                    <p className="text-gray-600 whitespace-pre-line text-sm">{businessConfig.contact.hours}</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card padding="lg" className="bg-blue-50">
+              <h3 className="text-lg font-bold text-gray-900 mb-3">What Happens Next?</h3>
+              <ol className="space-y-3 text-sm text-gray-700">
+                <li className="flex gap-2">
+                  <span className="font-bold text-blue-600">1.</span>
+                  <span>We'll review your request within 24 hours</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-blue-600">2.</span>
+                  <span>We'll contact you to schedule a consultation</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-blue-600">3.</span>
+                  <span>We'll visit your property to assess the project</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-blue-600">4.</span>
+                  <span>You'll receive a detailed written estimate</span>
+                </li>
+              </ol>
+            </Card>
           </div>
         </div>
       </Section>

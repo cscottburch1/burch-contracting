@@ -37,8 +37,6 @@ export async function PATCH(
 ) {
   try {
     const body = await request.json();
-
-    const updateData: any = {};
     const updates: string[] = [];
     const values: any[] = [];
 
@@ -54,27 +52,40 @@ export async function PATCH(
       updates.push('assigned_to = ?');
       values.push(body.assigned_to);
     }
-    if (body.estimated_value !== undefined) updateData.estimated_value = body.estimated_value;
-    if (body.scheduled_date !== undefined) updateData.scheduled_date = body.scheduled_date;
-    if (body.last_contact_date !== undefined) updateData.last_contact_date = body.last_contact_date;
-    if (body.tags !== undefined) updateData.tags = body.tags;
+    if (body.estimated_value !== undefined) {
+      updates.push('estimated_value = ?');
+      values.push(body.estimated_value);
+    }
+    if (body.scheduled_date !== undefined) {
+      updates.push('scheduled_date = ?');
+      values.push(body.scheduled_date);
+    }
+    if (body.last_contact_date !== undefined) {
+      updates.push('last_contact_date = ?');
+      values.push(body.last_contact_date);
+    }
+    if (body.tags !== undefined) {
+      updates.push('tags = ?');
+      values.push(JSON.stringify(body.tags));
+    }
 
-    updateData.updated_at = new Date().toISOString();
-
-    const { data: lead, error } = await supabase
-      .from('contact_leads')
-      .update(updateData)
-      .eq('id', params.id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Supabase error:', error);
+    if (updates.length === 0) {
       return NextResponse.json(
-        { error: 'Failed to update lead' },
-        { status: 500 }
+        { error: 'No fields to update' },
+        { status: 400 }
       );
     }
+
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    values.push(params.id);
+
+    const sql = `UPDATE contact_leads SET ${updates.join(', ')} WHERE id = ?`;
+    await query(sql, values);
+
+    const lead = await queryOne(
+      'SELECT * FROM contact_leads WHERE id = ?',
+      [params.id]
+    );
 
     return NextResponse.json(
       { lead },

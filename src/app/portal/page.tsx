@@ -109,7 +109,7 @@ export default function CustomerPortalPage() {
               </div>
               <div className="flex items-center gap-3">
                 <Button type="submit" variant="primary" size="md" disabled={loading}>
-                  <Icon name="Lock" size={18} />
+                  <Icon name="Clock" size={18} />
                   {loading ? 'Signing in...' : 'Sign in'}
                 </Button>
                 {message && <p className="text-sm text-gray-700">{message}</p>}

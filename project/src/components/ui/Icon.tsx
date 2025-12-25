@@ -4,9 +4,7 @@ import {
   ShieldCheck, MessageSquare, Award, Clock, Phone, Mail, MapPin,
   Star, Facebook, Instagram, Twitter, Linkedin, Menu, X,
   ChevronDown, ChevronRight, Check, ArrowRight, ExternalLink,
-  Calendar, User, ArrowLeft, FileText, DollarSign, Send,
-  AlertCircle, LogOut, Eye, Trash2, Users, UserCheck, Receipt,
-  Settings, Shield, Plus, LucideIcon
+  Calendar, User, LucideIcon
 } from 'lucide-react';
 
 const iconMap = {
@@ -14,9 +12,7 @@ const iconMap = {
   ShieldCheck, MessageSquare, Award, Clock, Phone, Mail, MapPin,
   Star, Facebook, Instagram, Twitter, Linkedin, Menu, X,
   ChevronDown, ChevronRight, Check, ArrowRight, ExternalLink,
-  Calendar, User, ArrowLeft, FileText, DollarSign, Send,
-  AlertCircle, LogOut, Eye, Trash2, Users, UserCheck, Receipt,
-  Settings, Shield, Plus
+  Calendar, User
 };
 
 export type IconName = keyof typeof iconMap;

@@ -11,9 +11,9 @@ export const Header: React.FC = () => {
   const navLinks = [
     { label: 'Home', href: '/' },
     { label: 'Services', href: '/services' },
-    { label: 'Admin', href: '/admin' },
     { label: 'Customer Portal', href: '/portal' },
-    { label: 'Contact', href: '/contact' }
+    { label: 'Contact', href: '/contact' },
+    { label: 'Admin', href: '/admin' }
   ];
 
   return (
@@ -50,10 +50,6 @@ export const Header: React.FC = () => {
           </div>
 
           <div className="hidden lg:flex items-center gap-3">
-            <Button variant="outline" size="sm" href="/portal/login">
-              <Icon name="User" size={16} />
-              Customer Login
-            </Button>
             <Button variant="primary" size="sm" href="/contact">
               Free Estimate
             </Button>
@@ -72,10 +68,6 @@ export const Header: React.FC = () => {
                   {link.label}
                 </a>
               ))}
-              <Button variant="outline" size="md" href="/portal/login" fullWidth>
-                <Icon name="User" size={16} />
-                Customer Login
-              </Button>
               <Button variant="primary" size="md" href="/contact" fullWidth>
                 Free Estimate
               </Button>
